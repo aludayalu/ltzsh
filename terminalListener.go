@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-
 	"golang.org/x/term"
 )
 
@@ -29,17 +28,49 @@ func terminalListener(events chan<- Event) {
 		for i < n {
 			b := buf[i]
 
-			if b == 3 {
-				events <- Event{
-					Type: ENUM_EVENT_KEY,
-					KeyData: &KeyEventData{
-						Key: "CTRL+C",
-					},
+			if b >= 1 && b <= 26 {
+				var key string
+
+				switch b {
+				case 13, 10:
+					key = "Enter"
+				case 8:
+					key = "Backspace"
+				default:
+					key = "CTRL+" + string('A'+b-1)
 				}
-				return
+
+				events <- Event{Type: ENUM_EVENT_KEY, KeyData: &KeyEventData{Key: key}}
+
+				if b == 3 {
+					return
+				}
+
+				i++
+				continue
 			}
 
 			if b == 0x1b {
+				if i+1 < n && buf[i+1] != '[' {
+					if i+2 < n {
+						nb := buf[i+1]
+
+						if nb >= 1 && nb <= 26 {
+							key := "ALT+CTRL+" + string('A'+nb-1)
+
+							events <- Event{Type: ENUM_EVENT_KEY, KeyData: &KeyEventData{Key: key}}
+
+							i += 2
+							continue
+						}
+
+						events <- Event{Type: ENUM_EVENT_KEY, KeyData: &KeyEventData{Key: "ALT+" + string(nb)}}
+
+						i += 2
+						continue
+					}
+				}
+
 				if i+1 < n && buf[i+1] == '[' {
 					if i+2 < n && buf[i+2] == '<' {
 						j := i + 3
@@ -63,15 +94,7 @@ func terminalListener(events chan<- Event) {
 									nums[k] = val
 								}
 
-								events <- Event{
-									Type: ENUM_EVENT_MOUSE,
-									MouseData: &MouseEventData{
-										Button:  nums[0],
-										X:       nums[1],
-										Y:       nums[2],
-										Pressed: map[bool]int{true: 1, false: 0}[c == 'M'],
-									},
-								}
+								events <- Event{Type: ENUM_EVENT_MOUSE, MouseData: &MouseEventData{Button: nums[0], X: nums[1], Y: nums[2], Pressed: map[bool]int{true: 1, false: 0}[c == 'M']}}
 
 								j++
 								break
@@ -86,51 +109,77 @@ func terminalListener(events chan<- Event) {
 						continue
 					}
 
-					if i+2 < n {
-						var key string
+					j := i + 2
+					val := 0
+					mod := 1
 
-						switch buf[i+2] {
-						case 'A':
-							key = "ArrowUp"
-						case 'B':
-							key = "ArrowDown"
-						case 'C':
-							key = "ArrowRight"
-						case 'D':
-							key = "ArrowLeft"
-						default:
-							key = "ESC"
+					for j < n {
+						c := buf[j]
+
+						if c >= '0' && c <= '9' {
+							val = val*10 + int(c-'0')
+						} else if c == ';' {
+							val = 0
+						} else {
+							if val != 0 {
+								mod = val
+							}
+
+							var base string
+
+							switch c {
+							case 'A':
+								base = "ArrowUp"
+							case 'B':
+								base = "ArrowDown"
+							case 'C':
+								base = "ArrowRight"
+							case 'D':
+								base = "ArrowLeft"
+							default:
+								base = "ESC"
+							}
+
+							prefix := ""
+
+							if mod >= 2 {
+								if mod == 2 {
+									prefix = "SHIFT+"
+								} else if mod == 3 {
+									prefix = "ALT+"
+								} else if mod == 4 {
+									prefix = "ALT+SHIFT+"
+								} else if mod == 5 {
+									prefix = "CTRL+"
+								} else if mod == 6 {
+									prefix = "CTRL+SHIFT+"
+								} else if mod == 7 {
+									prefix = "CTRL+ALT+"
+								} else if mod == 8 {
+									prefix = "CTRL+ALT+SHIFT+"
+								}
+							}
+
+							events <- Event{Type: ENUM_EVENT_KEY, KeyData: &KeyEventData{Key: prefix + base}}
+
+							j++
+							break
 						}
 
-						events <- Event{
-							Type: ENUM_EVENT_KEY,
-							KeyData: &KeyEventData{
-								Key: key,
-							},
-						}
-
-						i += 3
-						continue
+						j++
 					}
+
+					i = j
+					continue
 				}
 
-				events <- Event{
-					Type: ENUM_EVENT_KEY,
-					KeyData: &KeyEventData{
-						Key: "ESC",
-					},
-				}
+				events <- Event{Type: ENUM_EVENT_KEY, KeyData: &KeyEventData{Key: "ESC"}}
 
 				i++
 				continue
 			}
 
-			events <- Event{
-				Type: ENUM_EVENT_KEY,
-				KeyData: &KeyEventData{
-					Key: string(b),
-				},
-			}
+			events <- Event{Type: ENUM_EVENT_KEY, KeyData: &KeyEventData{Key: string(b)}}
 
 			i++
 		}
