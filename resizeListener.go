@@ -8,7 +8,7 @@ import (
 	"golang.org/x/term"
 )
 
-// written by CHatGPT
+// written originally by ChatGPT
 func resizeListener(events chan<- Event) {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGWINCH)

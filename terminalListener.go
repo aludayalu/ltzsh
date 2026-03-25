@@ -6,7 +6,7 @@ import (
 	"golang.org/x/term"
 )
 
-// written by ChatGPT
+// written originally by ChatGPT
 func terminalListener(events chan<- Event) {
 	fd := int(os.Stdin.Fd())
 	oldState, _ := term.MakeRaw(fd)
