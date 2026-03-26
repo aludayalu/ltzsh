@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 	"unicode/utf8"
-
+	"bytes"
 	"golang.org/x/term"
 )
 
@@ -29,6 +29,9 @@ func terminalListener(events chan<- Event) {
 
 	buf := make([]byte, 128)
 	pending := make([]byte, 0, 256)
+	inPaste := false
+	pasteBuffer := make([]byte, 0, 256)
+	pasteEnd := []byte("\x1b[201~")
 
 	emitKey := func(key string) {
 		events <- Event{Type: ENUM_EVENT_KEY, KeyData: &KeyEventData{Key: key}}
@@ -333,7 +336,9 @@ func terminalListener(events chan<- Event) {
 								key = prefix + "F19"
 							case 34:
 								key = prefix + "F20"
-							case 200, 201:
+							case 200:
+								inPaste = true
+								pasteBuffer = pasteBuffer[:0]
 								return j + 1, false
 							default:
 								return j + 1, false
@@ -405,6 +410,22 @@ func terminalListener(events chan<- Event) {
 		i := 0
 		for i < len(pending) {
 			b := pending[i]
+
+			if inPaste {
+				if len(pending[i:]) < len(pasteEnd) && bytes.HasPrefix(pasteEnd, pending[i:]) {
+					break
+				}
+				if bytes.HasPrefix(pending[i:], pasteEnd) {
+					inPaste = false
+					pasted := string(pasteBuffer)
+					events <- Event{Type: ENUM_EVENT_KEY, KeyData: &KeyEventData{Key: "CTRL+V", Data: &pasted}}
+					i += len(pasteEnd)
+					continue
+				}
+				pasteBuffer = append(pasteBuffer, b)
+				i++
+				continue
+			}
 
 			if b == 0x1b {
 				consumed, needMore := parseEscape(pending[i:])

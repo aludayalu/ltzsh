@@ -23,6 +23,7 @@ type MouseEventData struct {
 
 type KeyEventData struct {
 	Key string
+	Data *string
 }
 
 type ResizeEventData struct {
