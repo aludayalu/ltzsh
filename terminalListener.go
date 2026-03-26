@@ -8,27 +8,32 @@ import (
 )
 
 // written originally by ChatGPT
-func terminalListener(events chan<- Event) {
+func terminalListener(events chan<- Event, listener_cleanup *func()) {
 	fd := int(os.Stdin.Fd())
-	
-	defer os.Stdout.Sync()
 
 	oldState, _ := term.MakeRaw(fd)
-	defer term.Restore(fd, oldState)
 
 	os.Stdout.Write([]byte("\x1b[?1049h")) // alternate screen buffer
-	defer os.Stdout.Write([]byte("\x1b[?1049l"))
 
 	os.Stdout.Write([]byte("\x1b[?25l")) // hides cursor
-	defer os.Stdout.Write([]byte("\x1b[?25h"))
 
 	os.Stdout.Write([]byte("\x1b[?2004h")) // enable bracketed paste
-	defer os.Stdout.Write([]byte("\x1b[?2004l"))
-
-	defer os.Stdout.Write([]byte("\x1b[0m")) // reset terminal styles
 
 	os.Stdout.Write([]byte("\x1b[?1003h\x1b[?1006h"))
-	defer os.Stdout.Write([]byte("\x1b[?1003l\x1b[?1006l"))
+
+	cleanup := func() {
+		os.Stdout.Write([]byte("\x1b[?1003l\x1b[?1006l"))
+		os.Stdout.Write([]byte("\x1b[0m")) // resets terminal styles
+		os.Stdout.Write([]byte("\x1b[?2004l")) // disables bracketed paste
+		os.Stdout.Write([]byte("\x1b[?25h")) // unhides cursor
+		os.Stdout.Write([]byte("\x1b[?1049l")) // restores screen buffer
+		os.Stdout.Sync()
+		term.Restore(fd, oldState)
+	}
+
+	*listener_cleanup = cleanup
+
+	defer cleanup()
 
 	buf := make([]byte, 128)
 	pending := make([]byte, 0, 256)
@@ -448,10 +453,6 @@ func terminalListener(events chan<- Event) {
 
 			if key, ok := controlKey(b); ok {
 				emitKey(key)
-
-				if b == 3 {
-					return
-				}
 
 				i++
 				continue

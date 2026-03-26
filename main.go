@@ -11,7 +11,10 @@ func main() {
 	debugMode := flag.Bool("debug", false, "to enable keyboard debugging information")
 	flag.Parse()
 
-	go terminalListener(events)
+	listener_cleanup := func(){}
+	defer listener_cleanup()
+
+	go terminalListener(events, &listener_cleanup)
 	go resizeListener(events)
 
 	if *debugMode {
@@ -24,7 +27,6 @@ func KeyboardDebugging(events <-chan Event) {
 		if event.Type == ENUM_EVENT_KEY && event.KeyData.Key == "CTRL+C" {
 			return
 		}
-		fmt.Print("\r")
 		fmt.Println(event.KeyData.Key, event.KeyData.Data)
 	}
 }
