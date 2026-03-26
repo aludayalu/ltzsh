@@ -15,8 +15,6 @@ func main() {
 
 	go terminalListener(events, &listener_cleanup)
 
-	defer listener_cleanup()
-
 	go resizeListener(events)
 
 	if *debugMode {
@@ -28,9 +26,11 @@ func main() {
 
 func KeyboardDebugging(events <-chan Event) {
 	for event := range events {
-		if event.Type == ENUM_EVENT_KEY && event.KeyData.Key == "CTRL+C" {
-			return
+		if event.Type == ENUM_EVENT_KEY {
+			fmt.Println(event.KeyData.Key, event.KeyData.Data)
+			if event.KeyData.Key == "CTRL+C"  {
+				return
+			}
 		}
-		fmt.Println(event.KeyData.Key, event.KeyData.Data)
 	}
 }
