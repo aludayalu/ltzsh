@@ -12,14 +12,18 @@ func main() {
 	flag.Parse()
 
 	listener_cleanup := func(){}
-	defer listener_cleanup()
 
 	go terminalListener(events, &listener_cleanup)
+
+	defer listener_cleanup()
+
 	go resizeListener(events)
 
 	if *debugMode {
 		KeyboardDebugging(events)
 	}
+
+	listener_cleanup()
 }
 
 func KeyboardDebugging(events <-chan Event) {
