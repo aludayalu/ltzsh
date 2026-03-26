@@ -25,6 +25,7 @@ func KeyboardDebugging(events <-chan Event) {
 			if event.KeyData.Key == "CTRL+C" {
 				return
 			}
+			fmt.Print("\r")
 			fmt.Println(event.KeyData.Key)
 		}
 	}

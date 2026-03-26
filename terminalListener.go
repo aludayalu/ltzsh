@@ -14,7 +14,9 @@ func terminalListener(events chan<- Event) {
 	defer term.Restore(fd, oldState)
 
 	os.Stdout.Write([]byte("\x1b[?1003h\x1b[?1006h"))
+	os.Stdout.Write([]byte("\x1b[?25l"))
 	defer os.Stdout.Write([]byte("\x1b[?1003l\x1b[?1006l"))
+	defer os.Stdout.Write([]byte("\x1b[?25h"))
 
 	buf := make([]byte, 128)
 	pending := make([]byte, 0, 256)
