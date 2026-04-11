@@ -1,4 +1,4 @@
-module editor
+module ltz
 
 go 1.25.0
 

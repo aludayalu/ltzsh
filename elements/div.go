@@ -1,14 +1,14 @@
 package components
 
 import (
-	"editor/shared"
+	"ltz/shared"
 )
 
 type Div_Element struct {
 
 }
 
-func div(props ...any) shared.Element {
+func div(props ...any) Element {
 	return Div_Element{}
 }
 
