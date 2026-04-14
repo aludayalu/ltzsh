@@ -1,6 +1,8 @@
 package engine
 
-import "ltz/shared"
+import (
+	"ltz/shared"
+)
 
 func ProcessEvents(events <-chan shared.Event) {
 	for event := range events {

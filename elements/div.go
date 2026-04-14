@@ -1,6 +1,8 @@
 package elements
 
-import "ltz/shared"
+import (
+	"ltz/shared"
+)
 
 type Div struct {
 	Styles map[string]string
