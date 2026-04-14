@@ -1,6 +1,7 @@
 package main
 
 import (
+	"ltz/shared"
 	"os"
 	"os/signal"
 	"syscall"
@@ -9,7 +10,12 @@ import (
 )
 
 // written originally by ChatGPT
-func resizeListener(events chan<- Event) {
+func resizeListener(events chan<- shared.Event) {
+	w, h, _ := term.GetSize(int(os.Stdout.Fd()))
+	shared.CurrentTerminalDimensions = shared.TermDimensions{
+		Height: h,
+		Width: w,
+	}
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGWINCH)
 
@@ -19,9 +25,9 @@ func resizeListener(events chan<- Event) {
 			continue
 		}
 
-		events <- Event{
-			Type: ENUM_EVENT_RESIZE,
-			ResideData: &ResizeEventData{
+		events <- shared.Event{
+			Type: shared.ENUM_EVENT_RESIZE,
+			ResideData: &shared.ResizeEventData{
 				Height: h,
 				Width:  w,
 			},

@@ -1,4 +1,4 @@
-package components
+package elements
 
 import (
 	"ltz/shared"
@@ -7,5 +7,3 @@ import (
 type Element interface {
 	shared.Renderable
 }
-
-type Props = map[string]any

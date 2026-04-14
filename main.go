@@ -1,12 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"flag"
+	"fmt"
+	"ltz/engine"
+	"ltz/shared"
+	"time"
 )
 
 func main() {
-	var events chan Event = make(chan Event)
+	var events chan shared.Event = make(chan shared.Event)
 
 	debugMode := flag.Bool("debug", false, "to enable keyboard debugging information")
 	flag.Parse()
@@ -19,20 +22,23 @@ func main() {
 
 	if *debugMode {
 		KeyboardDebugging(events)
+	} else {
+		time.Sleep(time.Millisecond * 100)
+		engine.Render(events)
 	}
 
 	listener_cleanup()
 }
 
-func KeyboardDebugging(events <-chan Event) {
+func KeyboardDebugging(events <-chan shared.Event) {
 	for event := range events {
-		if event.Type == ENUM_EVENT_MOUSE {
+		if event.Type == shared.ENUM_EVENT_MOUSE {
 			fmt.Println(event.MouseData)
 		}
-		if event.Type == ENUM_EVENT_KEY {
+		if event.Type == shared.ENUM_EVENT_KEY {
 			fmt.Println(event.KeyData)
 		}
-		if event.Type == ENUM_EVENT_RESIZE {
+		if event.Type == shared.ENUM_EVENT_RESIZE {
 			fmt.Println(event.ResideData)
 		}
 	}

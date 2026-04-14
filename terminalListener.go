@@ -1,14 +1,16 @@
 package main
 
 import (
+	"bytes"
+	"ltz/shared"
 	"os"
 	"unicode/utf8"
-	"bytes"
+
 	"golang.org/x/term"
 )
 
 // written originally by ChatGPT
-func terminalListener(events chan<- Event, listener_cleanup *func()) {
+func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 	fd := int(os.Stdin.Fd())
 
 	oldState, _ := term.MakeRaw(fd)
@@ -42,7 +44,7 @@ func terminalListener(events chan<- Event, listener_cleanup *func()) {
 	pasteEnd := []byte("\x1b[201~")
 
 	emitKey := func(key string) {
-		events <- Event{Type: ENUM_EVENT_KEY, KeyData: &KeyEventData{Key: key}}
+		events <- shared.Event{Type: shared.ENUM_EVENT_KEY, KeyData: &shared.KeyEventData{Key: key}}
 	}
 
 	controlKey := func(b byte) (string, bool) {
@@ -200,9 +202,9 @@ func terminalListener(events chan<- Event, listener_cleanup *func()) {
 						}
 					}
 
-					events <- Event{
-						Type: ENUM_EVENT_MOUSE,
-						MouseData: &MouseEventData{
+					events <- shared.Event{
+						Type: shared.ENUM_EVENT_MOUSE,
+						MouseData: &shared.MouseEventData{
 							Button:  nums[0],
 							X:       nums[1],
 							Y:       nums[2],
@@ -426,7 +428,7 @@ func terminalListener(events chan<- Event, listener_cleanup *func()) {
 				if bytes.HasPrefix(pending[i:], pasteEnd) {
 					inPaste = false
 					pasted := string(pasteBuffer)
-					events <- Event{Type: ENUM_EVENT_KEY, KeyData: &KeyEventData{Key: "PASTE", Data: &pasted}}
+					events <- shared.Event{Type: shared.ENUM_EVENT_KEY, KeyData: &shared.KeyEventData{Key: "PASTE", Data: &pasted}}
 					i += len(pasteEnd)
 					continue
 				}

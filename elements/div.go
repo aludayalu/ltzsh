@@ -1,17 +1,15 @@
-package components
+package elements
 
-import (
-	"ltz/shared"
-)
+import "ltz/shared"
 
-type Div_Element struct {
-
+type Div struct {
+	Styles map[string]string
+	Children []Element
+	Listeners map[int]func()
+	Text string
 }
 
-func div(props ...any) Element {
-	return Div_Element{}
-}
-
-func (b Div_Element) Render(render_info shared.Render_Info) shared.RenderResult {
+func (Div)Render(render_info shared.Render_Info)shared.RenderResult {
 	return shared.RenderResult{}
 }
+
