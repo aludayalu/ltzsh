@@ -73,11 +73,9 @@ func probeTerminal() {
 	}
 	defer term.Restore(fd, oldState)
 
-	// Enter alternate screen
 	os.Stdout.Write([]byte("\x1b[?1049h"))
 	defer os.Stdout.Write([]byte("\x1b[?1049l"))
 
-	// Hide cursor (optional but cleaner)
 	os.Stdout.Write([]byte("\x1b[?25l"))
 	defer os.Stdout.Write([]byte("\x1b[?25h"))
 
