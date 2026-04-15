@@ -226,6 +226,9 @@ func processResults(results map[string]int, categories map[string][]int) {
 		graphemeConfig.SkinToneWidth = mode(vals)
 		graphemeConfig.SupportsSkinTones = (graphemeConfig.SkinToneWidth <= graphemeConfig.BasicEmojiWidth)
 	}
+	if graphemeConfig.SkinToneWidth > graphemeConfig.BasicEmojiWidth {
+		graphemeConfig.SkinToneWidth = graphemeConfig.BasicEmojiWidth
+	}
 	if vals, ok := categories["keycap"]; ok {
 		graphemeConfig.KeycapWidth = mode(vals)
 	}
@@ -410,11 +413,7 @@ func consumeNonZWJModifiers(runes []rune, i int) int {
 		case r == 0xFE0E || r == 0xFE0F:
 			i++
 		case r >= 0x1F3FB && r <= 0x1F3FF:
-			if graphemeConfig.SupportsSkinTones {
-				i++
-			} else {
-				return i // skin tone becomes separate
-			}
+			i++
 		case r >= 0x1F9B0 && r <= 0x1F9B3:
 			i++ // hair always consumed with base
 		case r == 0x20E3:
@@ -513,10 +512,7 @@ func graphemeWidth(cluster []rune) int {
 	// Skin tone
 	for _, r := range cluster {
 		if r >= 0x1F3FB && r <= 0x1F3FF {
-			if graphemeConfig.SupportsSkinTones {
-				return graphemeConfig.SkinToneWidth
-			}
-			return graphemeConfig.BasicEmojiWidth
+			return graphemeConfig.SkinToneWidth
 		}
 	}
 
