@@ -1,10 +1,5 @@
 package shared
 
-type RenderResult struct {
-	Start Coordinate
-	End Coordinate
-}
-
 type Coordinate struct {
 	Column int
 	Row int
@@ -14,10 +9,15 @@ type Renderable interface {
 	Render(render_info Render_Info)RenderResult
 }
 
-
 type Render_Info struct {
-	Buffer *[][]Cell // [row][column][index]
+
 	Dimensions RenderingDimensions
+}
+
+type RenderResult struct {
+	Buffer *[]Cell // 2D in shape
+	Rows int
+	Columns int
 }
 
 type RenderingDimensions struct {
@@ -27,4 +27,5 @@ type RenderingDimensions struct {
 
 type Cell struct {
 	Data string
+	DataVisualWidth int // 0, 1, 2
 }

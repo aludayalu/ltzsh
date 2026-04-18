@@ -17,3 +17,8 @@ go build -gcflags="all=-l=4 -B"
 ```go
 go build -trimpath -gcflags="all=-l=4 -B" -ldflags="-s -w"
 ```
+
+You can also use -m=2 for better decision verbosity to know why something escaped.
+
+# Future Optimizations
+1. Need to optimize terminal listener

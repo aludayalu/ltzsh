@@ -1,4 +1,4 @@
-package engine
+package shared
 
 import (
 	"encoding/json"
@@ -151,7 +151,7 @@ func getProbeTests() []probeTest {
 }
 
 // Probe runs tests to detect terminal behavior
-func Probe() error {
+func ProbeGraphemes() error {
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("failed to set raw mode: %w", err)
