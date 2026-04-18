@@ -36,10 +36,9 @@ func AllocSlice[T any](arena_group *ArenaGroup, size uint64) []T {
 // Reuse clears all inner arenas except the first one.
 // Reuse also Resets the first arena.
 func (arena_group *ArenaGroup)Reuse() {
-	for i := 1; i < len(arena_group.Arenas); i++ {
-        arena_group.Arenas[i] = nil // must nil out all inner arenas from the backing slice to make sure the GC collects
-    }
-	arena_group.Arenas = arena_group.Arenas[:1] // slicing like this still causes the backing slice allocation to point to other elements
+	first_arena := arena_group.Arenas[0]
+	arena_group.Arenas = make([]*Arena, 1)
+	arena_group.Arenas[0] = first_arena
 	arena_group.CurrentArenaIndex = 0
 	arena_group.Arenas[0].Reset()
 }
