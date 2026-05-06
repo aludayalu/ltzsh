@@ -9,7 +9,8 @@ import (
 	"golang.org/x/term"
 )
 
-// written originally by ChatGPT
+// file written originally by ChatGPT
+
 func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 	fd := int(os.Stdin.Fd())
 

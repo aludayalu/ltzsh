@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
 	"golang.org/x/term"
 )
 
@@ -27,7 +26,7 @@ func resizeListener(events chan<- shared.Event) {
 
 		events <- shared.Event{
 			Type: shared.ENUM_EVENT_RESIZE,
-			ResideData: &shared.ResizeEventData{
+			ResizeData: &shared.ResizeEventData{
 				Height: h,
 				Width:  w,
 			},

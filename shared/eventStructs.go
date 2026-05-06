@@ -11,7 +11,7 @@ type Event struct {
 	Type int
 	MouseData *MouseEventData
 	KeyData *KeyEventData
-	ResideData *ResizeEventData
+	ResizeData *ResizeEventData
 }
 
 type MouseEventData struct {

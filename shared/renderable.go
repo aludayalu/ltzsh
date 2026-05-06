@@ -1,5 +1,9 @@
 package shared
 
+import (
+	"ltz/arena"
+)
+
 type Coordinate struct {
 	Column int
 	Row int
@@ -10,7 +14,7 @@ type Renderable interface {
 }
 
 type Render_Info struct {
-
+	Arena_Group *arena.ArenaGroup
 	Dimensions RenderingDimensions
 }
 
@@ -26,6 +30,6 @@ type RenderingDimensions struct {
 }
 
 type Cell struct {
-	Data string
-	DataVisualWidth int // 0, 1, 2
+	Data []byte
+	DataVisualWidth uint8 // 0, 1, 2
 }

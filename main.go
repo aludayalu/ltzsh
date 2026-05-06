@@ -7,6 +7,7 @@ import (
 	"ltz/shared"
 	"os"
 	"time"
+
 	"golang.org/x/term"
 )
 
@@ -58,7 +59,7 @@ func KeyboardDebugging(events <-chan shared.Event) {
 			fmt.Println(event.KeyData)
 		}
 		if event.Type == shared.ENUM_EVENT_RESIZE {
-			fmt.Println(event.ResideData)
+			fmt.Println(event.ResizeData)
 		}
 	}
 }

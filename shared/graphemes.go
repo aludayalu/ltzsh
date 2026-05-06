@@ -18,34 +18,34 @@ import (
 // TerminalConfig holds measured terminal behavior
 type terminalGraphemeConfig struct {
 	// Basic measurements
-	ASCIIWidth       int `json:"ascii_width"`
-	CJKWidth         int `json:"cjk_width"`
-	FullwidthWidth   int `json:"fullwidth_width"`
+	ASCIIWidth       uint64 `json:"ascii_width"`
+	CJKWidth         uint64 `json:"cjk_width"`
+	FullwidthWidth   uint64 `json:"fullwidth_width"`
 
 	// Emoji categories
-	BasicEmojiWidth  int `json:"basic_emoji_width"`
-	EmojiVS16Width   int `json:"emoji_vs16_width"`
-	EmojiVS15Width   int `json:"emoji_vs15_width"`
+	BasicEmojiWidth  uint64 `json:"basic_emoji_width"`
+	EmojiVS16Width   uint64 `json:"emoji_vs16_width"`
+	EmojiVS15Width   uint64 `json:"emoji_vs15_width"`
 
 	// Complex emoji
-	FlagWidth        int `json:"flag_width"`
-	SkinToneWidth    int `json:"skin_tone_width"`
-	KeycapWidth      int `json:"keycap_width"`
-	TagSequenceWidth int `json:"tag_sequence_width"`
+	FlagWidth        uint64 `json:"flag_width"`
+	SkinToneWidth    uint64 `json:"skin_tone_width"`
+	KeycapWidth      uint64 `json:"keycap_width"`
+	TagSequenceWidth uint64 `json:"tag_sequence_width"`
 
 	// ZWJ sequences
-	ZWJ2Width        int `json:"zwj_2_width"`
-	ZWJ3Width        int `json:"zwj_3_width"`
-	ZWJ4Width        int `json:"zwj_4_width"`
-	ZWJComplexWidth  int `json:"zwj_complex_width"`
+	ZWJ2Width        uint64 `json:"zwj_2_width"`
+	ZWJ3Width        uint64 `json:"zwj_3_width"`
+	ZWJ4Width        uint64 `json:"zwj_4_width"`
+	ZWJComplexWidth  uint64 `json:"zwj_complex_width"`
 
 	// Combining behavior
-	CombiningWidth    int `json:"combining_width"`
-	MultipleCombining int `json:"multiple_combining"`
+	CombiningWidth    uint64 `json:"combining_width"`
+	MultipleCombining uint64 `json:"multiple_combining"`
 
 	// What does ZWJ look like when broken?
 	// Some terminals show nothing, some show a replacement char
-	ZWJAloneWidth int `json:"zwj_alone_width"`
+	ZWJAloneWidth uint64 `json:"zwj_alone_width"`
 
 	// Derived flags
 	SupportsZWJ        bool `json:"supports_zwj"`
@@ -159,8 +159,8 @@ func ProbeGraphemes() error {
 	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
 	tests := getProbeTests()
-	results := make(map[string]int)
-	categoryWidths := make(map[string][]int)
+	results := make(map[string]uint64)
+	categoryWidths := make(map[string][]uint64)
 
 	for _, t := range tests {
 		w, err := measureWidth(t.char)
@@ -176,16 +176,16 @@ func ProbeGraphemes() error {
 	return nil
 }
 
-func processResults(results map[string]int, categories map[string][]int) {
-	mode := func(vals []int) int {
+func processResults(results map[string]uint64, categories map[string][]uint64) {
+	mode := func(vals []uint64) uint64 {
 		if len(vals) == 0 {
 			return 2
 		}
-		counts := make(map[int]int)
+		counts := make(map[uint64]uint64)
 		for _, v := range vals {
 			counts[v]++
 		}
-		maxCount, maxVal := 0, vals[0]
+		maxCount, maxVal := uint64(0), vals[0]
 		for v, c := range counts {
 			if c > maxCount {
 				maxCount, maxVal = c, v
@@ -236,8 +236,9 @@ func processResults(results map[string]int, categories map[string][]int) {
 	// ZWJ alone: "a\u200Db" - subtract 2 for 'a' and 'b'
 	if vals, ok := categories["zwj_alone"]; ok {
 		measured := mode(vals)
-		graphemeConfig.ZWJAloneWidth = measured - 2
-		if graphemeConfig.ZWJAloneWidth < 0 {
+		if measured > 2 {
+			graphemeConfig.ZWJAloneWidth = measured - 2
+		} else {
 			graphemeConfig.ZWJAloneWidth = 0
 		}
 	}
@@ -267,7 +268,7 @@ func processResults(results map[string]int, categories map[string][]int) {
 	}
 }
 
-func measureWidth(s string) (int, error) {
+func measureWidth(s string) (uint64, error) {
 	fmt.Print("\033[1;1H\033[2K")
 
 	col1, err := queryCol()
@@ -286,7 +287,7 @@ func measureWidth(s string) (int, error) {
 	return col2 - col1, nil
 }
 
-func queryCol() (int, error) {
+func queryCol() (uint64, error) {
 	fmt.Print("\033[6n")
 
 	buf := make([]byte, 32)
@@ -313,7 +314,7 @@ func queryCol() (int, error) {
 		return 0, fmt.Errorf("parse failed: %q", buf[:n])
 	}
 
-	var col int
+	var col uint64
 	fmt.Sscanf(string(matches[2]), "%d", &col)
 	return col, nil
 }
@@ -321,7 +322,7 @@ func queryCol() (int, error) {
 // Grapheme represents a single visual unit
 type Grapheme struct {
 	Data  string
-	Width int
+	Width uint64
 }
 
 // Graphemes splits string into grapheme clusters based on ACTUAL terminal behavior
@@ -449,7 +450,7 @@ func consumeCombiningMarks(runes []rune, i int) int {
 	return i
 }
 
-func graphemeWidth(cluster []rune) int {
+func graphemeWidth(cluster []rune) uint64 {
 	if len(cluster) == 0 {
 		return 0
 	}
@@ -554,7 +555,7 @@ func graphemeWidth(cluster []rune) int {
 
 	// Combining marks
 	if len(cluster) > 1 && graphemeConfig.CombiningAddsWidth {
-		combiningCount := 0
+		combiningCount := uint64(0)
 		for _, r := range cluster[1:] {
 			if unicode.Is(unicode.Mn, r) || unicode.Is(unicode.Me, r) || unicode.Is(unicode.Mc, r) {
 				combiningCount++
@@ -633,8 +634,8 @@ func IsEmoji(r rune) bool {
 	return false
 }
 
-func StringWidth(s string) int {
-	w := 0
+func StringWidth(s string) uint64 {
+	w := uint64(0)
 	for _, g := range Graphemes(s) {
 		w += g.Width
 	}
