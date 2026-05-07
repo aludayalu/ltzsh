@@ -7,6 +7,8 @@ type ArenaGroup struct {
 	CurrentArenaIndex int
 }
 
+var OverAllocateRatio uint64 = 14
+
 func NewArenaGroup(baseSize uint64) *ArenaGroup {
 	var arena Arena
 	arena.Init(baseSize)
@@ -24,7 +26,7 @@ func AllocSlice[T any](arena_group *ArenaGroup, size uint64) []T {
 
 	if err != nil {
 		var newArena Arena
-		newArena.Init(total_size)
+		newArena.Init(total_size * OverAllocateRatio)
 		arena_group.Arenas = append(arena_group.Arenas, &newArena)
 		arena_group.CurrentArenaIndex += 1
 		data_ptr, _ = newArena.Alloc(total_size)
