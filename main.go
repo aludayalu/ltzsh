@@ -4,16 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"ltz/engine"
+	"ltz/keys"
 	"ltz/shared"
 	"os"
 	"time"
-
 	"golang.org/x/term"
 )
 
 func main() {
 	var events chan shared.Event = make(chan shared.Event)
 	shared.LoadGraphemeConfig()
+	keys.InitializeKeys()
 
 	debugMode := flag.Bool("debug", false, "To enable keyboard debugging information")
 	toProbe := flag.Bool("grapheme", false, "Test your terminal's grapheme rendering quirks and save it to ensure unicode graphemes are more correctly rendered.\nRun this test whenever your terminal is glitchy.")

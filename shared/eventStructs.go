@@ -1,5 +1,9 @@
 package shared
 
+import (
+	"ltz/keys"
+)
+
 const (
 	_ int = iota
 	ENUM_EVENT_MOUSE
@@ -22,7 +26,7 @@ type MouseEventData struct {
 }
 
 type KeyEventData struct {
-	Key string
+	Key keys.KeyVector
 	Data *string
 }
 

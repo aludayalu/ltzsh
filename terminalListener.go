@@ -2,11 +2,11 @@ package main
 
 import (
 	"bytes"
+	"ltz/keys"
 	"ltz/shared"
 	"os"
-	"unicode/utf8"
-
 	"golang.org/x/term"
+	"unicode/utf8"
 )
 
 // file written originally by ChatGPT
@@ -44,63 +44,67 @@ func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 	pasteBuffer := make([]byte, 0, 256)
 	pasteEnd := []byte("\x1b[201~")
 
-	emitKey := func(key string) {
+	emitKey := func(key keys.KeyVector) {
 		events <- shared.Event{Type: shared.ENUM_EVENT_KEY, KeyData: &shared.KeyEventData{Key: key}}
 	}
 
-	controlKey := func(b byte) (string, bool) {
+	emitKeyWithData := func(key keys.KeyVector, data *string) {
+		events <- shared.Event{Type: shared.ENUM_EVENT_KEY, KeyData: &shared.KeyEventData{Key: key, Data: data}}
+	}
+
+	controlKey := func(b byte) (keys.KeyVector, bool) {
 		switch b {
 			case 0:
-				return "CTRL+@", true
+				return keys.And(keys.CTRL, keys.At), true
 			case 8:
-				return "Backspace", true
+				return keys.BackSpace, true
 			case 9:
-				return "Tab", true
+				return keys.Tab, true
 			case 10, 13:
-				return "Enter", true
+				return keys.Enter, true
 			case 28:
-				return "CTRL+\\", true
+				return keys.And(keys.CTRL, keys.BackSlash), true
 			case 29:
-				return "CTRL+]", true
+				return keys.And(keys.CTRL, keys.SquareBracketClose), true
 			case 30:
-				return "CTRL+^", true
+				return keys.And(keys.CTRL, keys.Caret), true
 			case 31:
-				return "CTRL+_", true
+				return keys.And(keys.CTRL, keys.Underscore), true
 			case 127:
-				return "Backspace", true
+				return keys.BackSpace, true
 		}
 
 		if b >= 1 && b <= 26 {
-			return "CTRL+" + string('A'+b-1), true
+			return keys.And(keys.CTRL, keys.GetNthCapitalAlphabetKV(int(b - 1))), true
 		}
 
-		return "", false
+		return keys.KeyVector{}, false
 	}
 
-	modifierPrefix := func(mod int) string {
+	modifierPrefix := func(mod int) keys.KeyVector {
 		switch mod {
 			case 2:
-				return "SHIFT+"
+				return keys.Shift
 			case 3:
-				return "ALT+"
+				return keys.Alt
 			case 4:
-				return "ALT+SHIFT+"
+				return keys.And(keys.Alt, keys.Shift)
 			case 5:
-				return "CTRL+"
+				return keys.CTRL
 			case 6:
-				return "CTRL+SHIFT+"
+				return keys.And(keys.CTRL, keys.Shift)
 			case 7:
-				return "CTRL+ALT+"
+				return keys.And(keys.CTRL, keys.Alt)
 			case 8:
-				return "CTRL+ALT+SHIFT+"
+				return keys.And(keys.CTRL, keys.Alt, keys.Shift)
 		}
 
-		return ""
+		return keys.KeyVector{}
 	}
 
-	parseSingleKey := func(data []byte) (string, int, bool) {
+	parseSingleKey := func(data []byte) (keys.KeyVector, int, bool) {
 		if len(data) == 0 {
-			return "", 0, true
+			return keys.KeyVector{}, 0, true
 		}
 
 		b := data[0]
@@ -110,15 +114,10 @@ func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 		}
 
 		if b < 0x80 {
-			return string(b), 1, false
+			return keys.AsciiKey(b), 1, false
 		}
 
-		if !utf8.FullRune(data) {
-			return "", 0, true
-		}
-
-		r, size := utf8.DecodeRune(data)
-		return string(r), size, false
+		return keys.KeyVector{}, 1, false
 	}
 
 	parseSS3 := func(data []byte) (int, bool) {
@@ -130,29 +129,29 @@ func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 			return 0, false
 		}
 
-		var key string
+		var key keys.KeyVector
 
 		switch data[2] {
 			case 'A':
-				key = "ArrowUp"
+				key = keys.ArrowUp
 			case 'B':
-				key = "ArrowDown"
+				key = keys.ArrowDown
 			case 'C':
-				key = "ArrowRight"
+				key = keys.ArrowRight
 			case 'D':
-				key = "ArrowLeft"
+				key = keys.ArrowLeft
 			case 'H':
-				key = "Home"
+				key = keys.Home
 			case 'F':
-				key = "End"
+				key = keys.End
 			case 'P':
-				key = "F1"
+				key = keys.F1
 			case 'Q':
-				key = "F2"
+				key = keys.F2
 			case 'R':
-				key = "F3"
+				key = keys.F3
 			case 'S':
-				key = "F4"
+				key = keys.F4
 			default:
 				return 3, false
 		}
@@ -260,34 +259,34 @@ func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 				}
 
 				prefix := modifierPrefix(mod)
-				var key string
+				var key keys.KeyVector
 
 				switch final {
 					case 'A':
-						key = prefix + "ArrowUp"
+						key = keys.And(prefix, keys.ArrowUp)
 					case 'B':
-						key = prefix + "ArrowDown"
+						key = keys.And(prefix, keys.ArrowDown)
 					case 'C':
-						key = prefix + "ArrowRight"
+						key = keys.And(prefix, keys.ArrowRight)
 					case 'D':
-						key = prefix + "ArrowLeft"
+						key = keys.And(prefix, keys.ArrowLeft)
 					case 'H':
-						key = prefix + "Home"
+						key = keys.And(prefix, keys.Home)
 					case 'F':
-						key = prefix + "End"
+						key = keys.And(prefix, keys.End)
 					case 'P':
-						key = prefix + "F1"
+						key = keys.And(prefix, keys.F1)
 					case 'Q':
-						key = prefix + "F2"
+						key = keys.And(prefix, keys.F2)
 					case 'R':
-						key = prefix + "F3"
+						key = keys.And(prefix, keys.F3)
 					case 'S':
-						key = prefix + "F4"
+						key = keys.And(prefix, keys.F4)
 					case 'Z':
 						if len(params) == 0 {
-							key = "Shift+Tab"
+							key = keys.And(keys.Shift, keys.Tab)
 						} else {
-							key = prefix + "Tab"
+							key = keys.And(prefix, keys.Tab)
 						}
 					case '~':
 						if len(params) == 0 {
@@ -296,57 +295,41 @@ func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 
 						switch params[0] {
 							case 1:
-								key = prefix + "Home"
+								key = keys.And(prefix, keys.Home)
 							case 2:
-								key = prefix + "Insert"
+								key = keys.And(prefix, keys.Insert)
 							case 3:
-								key = prefix + "Delete"
+								key = keys.And(prefix, keys.Delete)
 							case 4:
-								key = prefix + "End"
+								key = keys.And(prefix, keys.End)
 							case 5:
-								key = prefix + "PageUp"
+								key = keys.And(prefix, keys.PageUp)
 							case 6:
-								key = prefix + "PageDown"
+								key = keys.And(prefix, keys.PageDown)
 							case 11:
-								key = prefix + "F1"
+								key = keys.And(prefix, keys.F1)
 							case 12:
-								key = prefix + "F2"
+								key = keys.And(prefix, keys.F2)
 							case 13:
-								key = prefix + "F3"
+								key = keys.And(prefix, keys.F3)
 							case 14:
-								key = prefix + "F4"
+								key = keys.And(prefix, keys.F4)
 							case 15:
-								key = prefix + "F5"
+								key = keys.And(prefix, keys.F5)
 							case 17:
-								key = prefix + "F6"
+								key = keys.And(prefix, keys.F6)
 							case 18:
-								key = prefix + "F7"
+								key = keys.And(prefix, keys.F7)
 							case 19:
-								key = prefix + "F8"
+								key = keys.And(prefix, keys.F8)
 							case 20:
-								key = prefix + "F9"
+								key = keys.And(prefix, keys.F9)
 							case 21:
-								key = prefix + "F10"
+								key = keys.And(prefix, keys.F10)
 							case 23:
-								key = prefix + "F11"
+								key = keys.And(prefix, keys.F11)
 							case 24:
-								key = prefix + "F12"
-							case 25:
-								key = prefix + "F13"
-							case 26:
-								key = prefix + "F14"
-							case 28:
-								key = prefix + "F15"
-							case 29:
-								key = prefix + "F16"
-							case 31:
-								key = prefix + "F17"
-							case 32:
-								key = prefix + "F18"
-							case 33:
-								key = prefix + "F19"
-							case 34:
-								key = prefix + "F20"
+								key = keys.And(prefix, keys.F12)
 							case 200:
 								inPaste = true
 								pasteBuffer = pasteBuffer[:0]
@@ -403,8 +386,11 @@ func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 		if needMore {
 			return 0, true
 		}
+		if key.Equals(keys.KeyVector{}) {
+			return 1 + used, false
+		}
 
-		emitKey("ALT+" + key)
+		emitKey(keys.And(keys.Alt, key))
 		return 1 + used, false
 	}
 
@@ -429,7 +415,7 @@ func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 				if bytes.HasPrefix(pending[i:], pasteEnd) {
 					inPaste = false
 					pasted := string(pasteBuffer)
-					events <- shared.Event{Type: shared.ENUM_EVENT_KEY, KeyData: &shared.KeyEventData{Key: "PASTE", Data: &pasted}}
+					events <- shared.Event{Type: shared.ENUM_EVENT_KEY, KeyData: &shared.KeyEventData{Key: keys.PASTE, Data: &pasted}}
 					i += len(pasteEnd)
 					continue
 				}
@@ -449,7 +435,7 @@ func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 					continue
 				}
 
-				emitKey("ESC")
+				emitKey(keys.ESC)
 				i++
 				continue
 			}
@@ -462,7 +448,7 @@ func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 			}
 
 			if b < 0x80 {
-				emitKey(string(b))
+				emitKey(keys.AsciiKey(b))
 				i++
 				continue
 			}
@@ -472,7 +458,8 @@ func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 			}
 
 			r, size := utf8.DecodeRune(pending[i:])
-			emitKey(string(r))
+			unicode_char := string(r)
+			emitKeyWithData(keys.UnicodeCharacter, &unicode_char)
 			i += size
 		}
 
@@ -481,7 +468,7 @@ func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 		}
 
 		if len(pending) == 1 && pending[0] == 0x1b {
-			emitKey("ESC")
+			emitKey(keys.ESC)
 			pending = pending[:0]
 		}
 	}
