@@ -1,5 +1,7 @@
 package keys
 
+import "fmt"
+
 var (
 	A KeyVector
 	B KeyVector
@@ -57,6 +59,7 @@ var (
 
 func InitializeAlphabets() {
 	if (counter != 0) {
+		fmt.Println("Initialize 'InitializeAlphabets()' first. It can only be initialized once.")
 		return
 	}
 
