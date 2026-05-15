@@ -5,13 +5,13 @@ import (
 	"ltz/keys"
 	"ltz/shared"
 	"os"
-	"golang.org/x/term"
 	"unicode/utf8"
+	"golang.org/x/term"
 )
 
 // file written originally by ChatGPT
 
-func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
+func terminalListener(events chan<- shared.Event, listener_cleanup *func(), hasStarted chan <- int) {
 	fd := int(os.Stdin.Fd())
 
 	oldState, _ := term.MakeRaw(fd)
@@ -393,6 +393,8 @@ func terminalListener(events chan<- shared.Event, listener_cleanup *func()) {
 		emitKey(keys.And(keys.Alt, key))
 		return 1 + used, false
 	}
+
+	hasStarted <- 1
 
 	for {
 		n, err := os.Stdin.Read(buf)

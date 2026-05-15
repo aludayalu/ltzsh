@@ -7,44 +7,50 @@ import (
 	"ltz/keys"
 	"ltz/shared"
 	"os"
-	"time"
+
 	"golang.org/x/term"
 )
 
 func main() {
 	var events chan shared.Event = make(chan shared.Event)
-	shared.LoadGraphemeConfig()
-	keys.InitializeKeys()
 
 	debugMode := flag.Bool("debug", false, "To enable keyboard debugging information")
 	toProbe := flag.Bool("grapheme", false, "Test your terminal's grapheme rendering quirks and save it to ensure unicode graphemes are more correctly rendered.\nRun this test whenever your terminal is glitchy.")
 	
 	flag.Parse()
 
-	listener_cleanup := func(){}
+	{ // tests and saves grapheme configuration
+		if *toProbe {
+			probeTerminal()
 
-	if *toProbe {
-		probeTerminal()
+			err :=  shared.SaveGraphemeConfig()
 
-		err :=  shared.SaveGraphemeConfig()
+			if err == nil {
+				fmt.Println("Grapheme configuration has been saved!")
+			} else {
+				fmt.Println("Unable to save grapheme config", err)
+			}
 
-		if err == nil {
-			fmt.Println("Grapheme configuration has been saved!")
-		} else {
-			fmt.Println("Unable to save grapheme config", err)
+			return
 		}
-
-		return
 	}
 
-	go terminalListener(events, &listener_cleanup)
+	{ // Initializing Configuration
+		shared.LoadGraphemeConfig()
+		keys.InitializeKeys()
+	}
+
+	listener_cleanup := func(){}
+	hasStarted := make(chan int)
+
+	go terminalListener(events, &listener_cleanup, hasStarted)
 
 	go resizeListener(events)
 
 	if *debugMode {
 		KeyboardDebugging(events)
 	} else {
-		time.Sleep(time.Millisecond * 100)
+		<-hasStarted
 		engine.Run(events)
 	}
 
